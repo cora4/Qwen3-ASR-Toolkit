@@ -6,14 +6,12 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
-        'dashscope',
         'librosa',
         'soundfile',
         'silero_vad',
         'pydub',
         'tqdm',
-        'numpy',
-        'srt'
+        'numpy'
     ],
     entry_points={
         'console_scripts': [
@@ -22,7 +20,7 @@ setup(
     },
     author='He Wang',
     author_email='hwang2001@mail.nwpu.edu.cn',
-    description='Python toolkit for the Qwen3-ASR API—parallel high‑throughput calls, robust long‑audio transcription, multi‑sample‑rate support.',
+    description='Python toolkit for the Qwen3-ASR API—high‑throughput calls, robust long‑audio transcription, multi‑sample‑rate support.',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
     url='https://github.com/QwenLM/Qwen3-ASR-Toolkit',

@@ -1,12 +1,17 @@
 import os
 import time
 import random
-import dashscope
 
 from pydub import AudioSegment
+from openai import OpenAI
+import base64
 
+client = OpenAI(
+    base_url="http://localhost:8000/v1",
+    api_key="EMPTY"
+)
 
-MAX_API_RETRY = 10
+MAX_API_RETRY = 1
 API_RETRY_SLEEP = (1, 2)
 
 
@@ -26,7 +31,7 @@ language_code_mapping = {
 
 
 class QwenASR:
-    def __init__(self, model: str = "qwen3-asr-flash"):
+    def __init__(self, model: str = "qwen3-asr"):
         self.model = model
 
     def post_text_process(self, text, threshold=20):
@@ -97,61 +102,80 @@ class QwenASR:
         return fix_pattern_repeats(text, threshold)
 
     def asr(self, wav_url: str, context: str = ""):
+        my_lang = context
+        prefix = "language"
+        suffix = "<asr_text>"
+        combined_text = f"{prefix} {my_lang}{suffix}"
+
         if not wav_url.startswith("http"):
             assert os.path.exists(wav_url), f"{wav_url} not exists!"
             file_path = wav_url
             file_size = os.path.getsize(file_path)
 
-            # file size > 10M
-            if file_size > 10 * 1024 * 1024:
-                # convert to mp3
-                mp3_path = os.path.splitext(file_path)[0] + ".mp3"
-                audio = AudioSegment.from_file(file_path)
-                audio.export(mp3_path, format="mp3")
-                wav_url = mp3_path
+            with open(wav_url, "rb") as f:
+                audio_bytes = f.read()
+
+            audio_base64 = base64.b64encode(audio_bytes).decode("utf-8")
 
             wav_url = f"file://{wav_url}"
+
+            assistant_message = {
+                "role": "assistant",
+                "content": "",
+                "tool_calls": []
+            }
 
         # Submit the ASR task
         for _ in range(MAX_API_RETRY):
             try:
-                messages = [
-                    {
-                        "role": "system",
-                        "content": [
-                            {"text": context},
-                        ]
-                    },
-                    {
-                        "role": "user",
-                        "content": [
-                            {"audio": wav_url},
-                        ]
-                    }
-                ]
-                response = dashscope.MultiModalConversation.call(
+                stream = client.chat.completions.create(
                     model=self.model,
-                    messages=messages,
-                    result_format="message",
-                    asr_options={
-                        "enable_lid": True,
-                        "enable_itn": False
-                    }
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "input_audio",
+                                    "input_audio": {
+                                        "data": audio_base64,
+                                        "format": "wav"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "role": "assistant",
+                            "content": [
+                                {
+                                    "type": "text",
+                                    "text": combined_text
+                                }
+                            ]
+                        }
+                    ],
+                    stream=True
                 )
 
-                if response.status_code != 200:
-                    raise Exception(f"http status_code: {response.status_code} {response}")
-                output = response['output']['choices'][0]
+                for chunk in stream:
+                    choice = chunk.choices[0]
+
+                    # print streamed text
+                    if choice.delta and choice.delta.content:
+                        print(choice.delta.content, end="", flush=True)
+                        assistant_message["content"] += choice.delta.content
+
+                print()
+                recog_text = assistant_message["content"]
+
+                output = assistant_message["content"]
 
                 recog_text = None
-                if len(output["message"]["content"]):
-                    recog_text = output["message"]["content"][0]["text"]
+                if len(assistant_message["content"]):
+                    recog_text = assistant_message["content"]
                 if recog_text is None:
                     recog_text = ""
 
                 lang_code = None
-                if "annotations" in output["message"]:
-                    lang_code = output["message"]["annotations"][0]["language"]
                 language = language_code_mapping.get(lang_code, "Not Supported")
 
                 return language, self.post_text_process(recog_text)
@@ -168,6 +192,6 @@ class QwenASR:
 
 
 if __name__ == "__main__":
-    qwen_asr = QwenASR(model="qwen3-asr-flash")
+    qwen_asr = QwenASR(model="qwen3-asr")
     asr_text = qwen_asr.asr(wav_url="/path/to/your/wav_file.wav")
     print(asr_text)
