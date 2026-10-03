@@ -16,17 +16,18 @@ API_RETRY_SLEEP = (1, 2)
 
 
 language_code_mapping = {
-    "ar": "Arabic",
-    "zh": "Chinese",
-    "en": "English",
-    "fr": "French",
-    "de": "German",
-    "it": "Italian",
-    "ja": "Japanese",
-    "ko": "Korean",
-    "pt": "Portuguese",
-    "ru": "Russian",
-    "es": "Spanish"
+  "ara": "Arabic",
+  "zho": "Chinese",
+  "eng": "English",
+  "fra": "French",
+  "deu": "German",
+  "ita": "Italian",
+  "jpn": "Japanese",
+  "kor": "Korean",
+  "por": "Portuguese",
+  "rus": "Russian",
+  "spa": "Spanish"
+  "yue": "Cantonese"
 }
 
 
@@ -155,18 +156,18 @@ class QwenASR:
                     ],
                     stream=True
                 )
-
+                first = True
                 for chunk in stream:
-                    choice = chunk.choices[0]
-
-                    # print streamed text
-                    if choice.delta and choice.delta.content:
-                        print(choice.delta.content, end="", flush=True)
-                        assistant_message["content"] += choice.delta.content
-
+                    content = chunk.choices[0].delta.content
+                    if content:
+                        if first:
+                            content = content.removeprefix(combined_text)
+                            first = False
+                        print(content, end="\n", flush=True)
+                        assistant_message["content"] += content
                 print()
-                recog_text = assistant_message["content"]
 
+                recog_text = assistant_message["content"]
                 output = assistant_message["content"]
 
                 recog_text = None
