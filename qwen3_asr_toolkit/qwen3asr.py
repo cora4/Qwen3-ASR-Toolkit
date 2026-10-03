@@ -17,7 +17,7 @@ API_RETRY_SLEEP = (1, 2)
 
 language_code_mapping = {
   "ara": "Arabic",
-  "zho": "Chinese",
+  "cmn": "Chinese",
   "eng": "English",
   "fra": "French",
   "deu": "German",
