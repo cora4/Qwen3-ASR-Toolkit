@@ -26,7 +26,7 @@ language_code_mapping = {
   "kor": "Korean",
   "por": "Portuguese",
   "rus": "Russian",
-  "spa": "Spanish"
+  "spa": "Spanish",
   "yue": "Cantonese"
 }
 
