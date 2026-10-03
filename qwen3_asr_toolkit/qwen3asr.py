@@ -163,13 +163,11 @@ class QwenASR:
                         if first:
                             content = content.removeprefix(combined_text)
                             first = False
-                        print(content, end="\n", flush=True)
+                        print(content, end="", flush=True)
                         assistant_message["content"] += content
                 print()
 
-                recog_text = assistant_message["content"]
                 output = assistant_message["content"]
-
                 recog_text = None
                 if len(assistant_message["content"]):
                     recog_text = assistant_message["content"]
