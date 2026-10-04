@@ -49,7 +49,7 @@ def load_audio(file_path: str) -> np.ndarray:
             raise RuntimeError(f"Failed to load audio from local file '{file_path}' even with ffmpeg. Error: {ffmpeg_e}")
 
 
-def process_vad(wav: np.ndarray, worker_vad_model, segment_threshold_s: int = 120, max_segment_threshold_s: int = 180) -> list[np.ndarray]:
+def process_vad(wav: np.ndarray, worker_vad_model, segment_threshold_s: int = 45, max_segment_threshold_s: int = 60) -> list[np.ndarray]:
     try:
         vad_params = {
             'sampling_rate': WAV_SAMPLE_RATE,
